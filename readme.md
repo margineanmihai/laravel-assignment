@@ -6,7 +6,7 @@ Clone this repository to start with the same code I start with in this course.
 # Usage
 Simply clone this repo and run `composer install` to install all the required dependencies. Make sure to rename the `.env.example` file to `.env` and also run `php artisan key:generate` to generate an application key for this Laravel app.
 
-Training assignment
+# Training assignment
 
 Create a Q/A application (e.g. reddit, quora, stackoverflow, etc.) based on RESTful calls with the following steps/features:
 
