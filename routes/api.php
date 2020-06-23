@@ -14,11 +14,27 @@ use Illuminate\Http\Request;
 */
 
 Route::resource('questions', 'QuestionController', [
-    'only' => ['index', 'store', 'destroy']
+    'except' => ['show', 'create', 'edit']
 ]);
 
 Route::resource('answer', 'AnswerController', [
-    'only' => ['store', 'destroy']
+    'only' => ['store', 'update', 'destroy']
+]);
+
+Route::post('user', [
+    'uses' => 'AuthController@store'
+]);
+
+Route::post('user/signin', [
+    'uses' => 'AuthController@signin'
+]);
+
+Route::post('password/email', [
+    'uses' => 'Auth\ForgotPasswordController@sendResetLinkEmail'
+]);
+
+Route::post('password/reset', [
+    'uses' => 'Auth\ResetPasswordController@reset'
 ]);
 
 Route::resource('meeting', 'MeetingController', [
@@ -29,11 +45,4 @@ Route::resource('meeting/registration', 'RegistrationController', [
     'only' => ['store', 'destroy']
 ]);
 
-Route::post('user', [
-    'uses' => 'AuthController@store'
-]);
-
-Route::post('user/signin', [
-    'uses' => 'AuthController@signin'
-]);
 

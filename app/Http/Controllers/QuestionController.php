@@ -9,9 +9,16 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 
 use App\Question;
+use JWTAuth;
 
 class QuestionController extends Controller
 {
+    public function __construct() {
+        $this->middleware('jwt.auth', ['only' => [
+            'update', 'store', 'destroy'
+        ]]);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -27,8 +34,10 @@ class QuestionController extends Controller
         }])->get();
         foreach($questions as $key => $question) {
             $question->answers_no = $questionsWithCount[$key]->answers_count;
+            $question->question_by = $question->user()->get()[0]->name;
             if($question->answers_no > 0) {
                 $question->last_answer_date = $question->answers[0]->created_at->toDateString();
+                $question->last_answer = "by " . $question->answers[0]->user()->get()[0]->name . " on ". $question->last_answer_date;
             }
         }
         $questions = $questions->toArray();
@@ -59,6 +68,9 @@ class QuestionController extends Controller
      */
     public function store(Request $request)
     {
+        if (! $user = JWTAuth::parseToken()->authenticate()) {
+            return response()->json(['msg' => 'User not found'], 404);
+        }
         $this->validate($request, [
             'title' => 'required',
             'description' => 'required',
@@ -68,7 +80,8 @@ class QuestionController extends Controller
         $description = $request->input('description');
         $question = new Question([
             'title' => $title,
-            'description' => $description
+            'description' => $description,
+            'user_id' => $user->id
         ]);
         if ($question->save()) {
             $message = [
@@ -85,6 +98,48 @@ class QuestionController extends Controller
         return response()->json($response, 404);
     }
 
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @param  int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        if (! $user = JWTAuth::parseToken()->authenticate()) {
+            return response()->json(['msg' => 'User not found'], 404);
+        }
+        try {
+            $question = Question::findOrFail($id);
+        } catch (ModelNotFoundException $ex) {
+            return response()->json(['msg' => 'edit failed. question not found'], 404);
+        }
+        if($question->user_id !== $user->id) {
+            return response()->json(['msg' => 'user does not have permission to edit this question'], 401);
+        }
+
+        $this->validate($request, [
+            'title' => 'required',
+            'description' => 'required',
+        ]);
+
+        $question->title = $request->input('title');
+        $question->description = $request->input('description');
+
+        if (!$question->update()) {
+            return response()->json(['msg' => 'Error during updating'], 404);
+        }
+
+        $response = [
+            'msg' => 'Question updated',
+            'question' => $question
+        ];
+
+        return response()->json($response, 200);
+        
+    }
+
      /**
      * Remove the specified resource from storage.
      *
@@ -93,10 +148,16 @@ class QuestionController extends Controller
      */
     public function destroy($id)
     {
+        if (! $user = JWTAuth::parseToken()->authenticate()) {
+            return response()->json(['msg' => 'User not found'], 404);
+        }
         try {
             $question = Question::findOrFail($id);
         } catch (ModelNotFoundException $ex) {
             return response()->json(['msg' => 'deletion failed. question not found'], 404);
+        }
+        if($question->user_id !== $user->id) {
+            return response()->json(['msg' => 'user does not have permission to delete this question'], 401);
         }
         $answers = $question->answers;
         $answersNo = count($answers);
