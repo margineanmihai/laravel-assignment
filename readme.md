@@ -100,3 +100,5 @@ body JSON
   password: "password",
   password_confirmation: "repeat_password"
 }
+
+For reset password the project is currently congigured with my mailtrap credentials so if you want to receive an email with the token (needed in the 2nd step of resetting the password) you will need to edit .env file and add your mailtrap credentials (MAIL_USERNAME and MAIL_PASSWORD)
